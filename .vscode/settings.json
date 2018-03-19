@@ -1,0 +1,7 @@
+// Place your settings in this file to overwrite default and user settings.
+{
+  "files.associations": {
+    "*.vue": "vue"
+  },
+  "vetur.format.defaultFormatter.html": "js-beautify-html"
+}

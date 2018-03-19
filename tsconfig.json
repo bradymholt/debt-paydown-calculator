@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "outDir": "dist/",
+    "sourceMap": false,
+    "strict": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "target":"es2015",
+    "experimentalDecorators": true,
+    "strictPropertyInitialization": false
+  },
+  "files": ["./src/types.ts", "./src/boot.ts"],
+  "include": ["./src/*.d.ts"]
+}
