@@ -3,20 +3,20 @@
 // Copyright 2011 Randy Merrill
 
 import * as types from "./types";
+import { StrategyTypeEnum } from "./enums";
 
-interface StrategyConfigDetail {
-  type: types.StrategyTypeEnum;
-  name: string;
-  description: string;
-  sorter: (loans: types.IStrategyAccount[]) => types.IStrategyAccount[];
-}
-
-const strategyConfig: Array<StrategyConfigDetail> = [
+/**
+ * Define Strategies
+ *
+ * Strategies are used to determine the order that loans should be paid.
+ */
+const strategyDefinitions: Array<types.StrategyDefinition> = [
   {
-    type: types.StrategyTypeEnum.HighestBalanceFirst,
+    type: StrategyTypeEnum.HighestBalanceFirst,
     name: "Highest Balance First",
-    description: "",
-    sorter: function(loans: types.IStrategyAccount[]) {
+    description:
+      "This is calculated as a counter-point to the Debt Snowball (Lowest Balance) strategy to show how much of a difference the order makes.",
+    sorter: function(loans: types.StrategyLoan[]) {
       return loans.sort(function(a, b) {
         var diff = Number(b.principal) - Number(a.principal);
 
@@ -30,10 +30,11 @@ const strategyConfig: Array<StrategyConfigDetail> = [
     }
   },
   {
-    type: types.StrategyTypeEnum.LowestBalanceFirst,
-    name: "Lowest Balance First",
-    description: "",
-    sorter: function(loans: types.IStrategyAccount[]) {
+    type: StrategyTypeEnum.LowestBalanceFirst,
+    name: "Debt Snowball (Lowest Balance First)",
+    description:
+      "By paying off loans with the lowest balance first you can increase your snowball quickly.  This is one of the most commonly promoted strategies and often is easier mentally and emotionally to execute since you are able to build momentum quickly and feel good about the progress you make.",
+    sorter: function(loans: types.StrategyLoan[]) {
       return loans.sort(function(a, b) {
         var diff = Number(a.principal) - Number(b.principal);
 
@@ -47,10 +48,11 @@ const strategyConfig: Array<StrategyConfigDetail> = [
     }
   },
   {
-    type: types.StrategyTypeEnum.HighestInterestRateFirst,
-    name: "Highest Interest Rate First",
-    description: "",
-    sorter: function(loans: types.IStrategyAccount[]) {
+    type: StrategyTypeEnum.HighestInterestRateFirst,
+    name: "Debt Avalanche (Highest Interest Rate First)",
+    description:
+      "By paying off the loans with the highest interest rate first you often end up paying less in interest in total.  This will often save the most money, but may be the most mentally and emotionally challenging to execute since it often takes longer to feel like it is having any effect.",
+    sorter: function(loans: types.StrategyLoan[]) {
       return loans.sort(function(a, b) {
         var diff = Number(b.rate) - Number(a.rate);
 
@@ -64,10 +66,11 @@ const strategyConfig: Array<StrategyConfigDetail> = [
     }
   },
   {
-    type: types.StrategyTypeEnum.LowestInterestRateFirst,
+    type: StrategyTypeEnum.LowestInterestRateFirst,
     name: "Lowest Interest Rate First",
-    description: "",
-    sorter: function(loans: types.IStrategyAccount[]) {
+    description:
+      "This is calculated as a counter-point to the Debt Avalanche (Highest Interest Rate) strategy to show how much of a difference the order makes.",
+    sorter: function(loans: types.StrategyLoan[]) {
       return loans.sort(function(a, b) {
         var diff = Number(a.rate) - Number(b.rate);
 
@@ -81,10 +84,11 @@ const strategyConfig: Array<StrategyConfigDetail> = [
     }
   },
   {
-    type: types.StrategyTypeEnum.BalanceMinimumPaymentRatio,
+    type: StrategyTypeEnum.BalanceMinimumPaymentRatio,
     name: "Balance/Minimum Payment Ratio",
-    description: "",
-    sorter: function(loans: types.IStrategyAccount[]) {
+    description:
+      "Attempts to find debts that will be easy to pay off and add the most to your snowball for the next loan.  This is a preferred strategy as it can be mentally and emotionally easier than the Highest Interest Rate strategy and usually quicker than the Lowest Balance strategy.",
+    sorter: function(loans: types.StrategyLoan[]) {
       return loans.sort(function(a, b) {
         var ratio =
           Number(a.principal) / Number(a.minPayment) -
@@ -100,10 +104,11 @@ const strategyConfig: Array<StrategyConfigDetail> = [
     }
   },
   {
-    type: types.StrategyTypeEnum.BalanceInterestRateRatio,
+    type: StrategyTypeEnum.BalanceInterestRateRatio,
     name: "Balance/Interest Rate Ratio",
-    description: "",
-    sorter: function(loans: types.IStrategyAccount[]) {
+    description:
+      "Attempts to find debts that will be easy to pay off and add the most to your snowball for the next loan.  This is a preferred strategy as if can be mentally and emotionally easier than the Highest Interest Rate strategy and quicker than the Lowest Balance strategy.",
+    sorter: function(loans: types.StrategyLoan[]) {
       return loans.sort(function(a, b) {
         var ratio =
           Number(a.principal) / Number(a.rate) -
@@ -120,69 +125,74 @@ const strategyConfig: Array<StrategyConfigDetail> = [
   }
 ];
 
-export function getStrategies(loans: types.IAccount[], extraPayment: number) {
-  let strategies: types.IStrategy[] = [];
-  let configs = strategyConfig;
-  for (var config of configs) {
-    let strategy = calculateStrategy(config, loans, extraPayment);
-    strategies.push(strategy);
-  }
-
-  return strategies;
-}
-
 /**
- * Given an array of loans already sorted per the strategy, calculates loan payment schedule
- * @param strategy
+ * Given a list of loans, calculates a list of payment strategies
  * @param loans
  * @param extraPayment
  */
-function calculateStrategy(
-  strategyConfig: StrategyConfigDetail,
-  loans: types.IAccount[],
+export function getPaymentStrategies(
+  loans: types.Debt[],
   extraPayment: number
 ) {
+  let paymentStrategies: types.PaymentStrategy[] = [];
+  for (let definition of strategyDefinitions) {
+    let strategy = calculateStrategy(loans, definition, extraPayment);
+    paymentStrategies.push(strategy);
+  }
+
+  return paymentStrategies;
+}
+
+/**
+ * Given an array of loans, calculates a loan payment schedule for a strategy
+ * @param strategy
+ * @param debts
+ * @param extraPayment
+ */
+function calculateStrategy(
+  debts: types.Debt[],
+  strategyDefinition: types.StrategyDefinition,
+  extraPayment: number
+) {
+  const paymentsPerYear = 12;
+
   let schedule = [];
   let hasBalance = true;
   let extraUsed = 0;
 
-  const ppy = 12;
-
   // Use a copy of the loans to let the strategies have their own order
-  let strategyLoans = <types.IStrategyAccount[]>JSON.parse(
-    JSON.stringify(loans)
-  );
-  let loanOrder = <types.IStrategyAccount[]>strategyConfig.sorter(
+  let strategyLoans = <types.StrategyLoan[]>JSON.parse(JSON.stringify(debts));
+  let debtOrder = <types.StrategyLoan[]>strategyDefinition.sorter(
     strategyLoans
   );
 
   // Prime the loan for scheduling
-  for (let loan of loanOrder) {
-    loan.balance = Number(loan.principal);
-    loan.interest = 0;
-    loan.schedule = [];
-    loan.periodRate = Number(loan.rate) / ppy;
+  for (let debt of debtOrder) {
+    debt.balance = Number(debt.principal);
+    debt.interest = 0;
+    debt.schedule = [];
+    debt.periodRate = Number(debt.rate) / paymentsPerYear;
   }
 
   while (hasBalance) {
     let extra = extraPayment;
 
     // Handle minimum payments
-    for (let loan of loanOrder) {
-      if (loan.balance > 0) {
-        let amount = Math.min(loan.balance, Number(loan.minPayment));
-        let interest = loan.balance * (loan.periodRate / 100);
+    for (let debt of debtOrder) {
+      if (debt.balance > 0) {
+        let amount = Math.min(debt.balance, Number(debt.minPayment));
+        let interest = debt.balance * (debt.periodRate / 100);
         let principal = amount - interest;
 
-        loan.balance = loan.balance - Number(principal);
-        loan.interest = loan.interest + interest;
+        debt.balance = debt.balance - Number(principal);
+        debt.interest = debt.interest + interest;
         extra -= amount;
 
-        loan.schedule.push({
+        debt.schedule.push({
           amount: amount,
           interest: interest,
           principal: principal,
-          balance: loan.balance
+          balance: debt.balance
         });
       }
     }
@@ -191,20 +201,20 @@ function calculateStrategy(
     extraUsed = extra;
 
     // Handle extra money
-    for (let loan of loanOrder) {
-      if (loan.balance > 0) {
-        let amount = Math.min(loan.balance, extra);
+    for (let debt of debtOrder) {
+      if (debt.balance > 0) {
+        let amount = Math.min(debt.balance, extra);
 
-        loan.balance -= amount;
+        debt.balance -= amount;
         extra -= amount;
 
-        let pos = loan.schedule.length - 1;
+        let pos = debt.schedule.length - 1;
 
-        loan.schedule[pos].amount = loan.schedule[pos].amount + amount;
-        loan.schedule[pos].principal =
-          (loan.schedule[pos].principal || 0) + amount;
+        debt.schedule[pos].amount = debt.schedule[pos].amount + amount;
+        debt.schedule[pos].principal =
+          (debt.schedule[pos].principal || 0) + amount;
 
-        loan.schedule[pos].balance = loan.balance.toFixed(2);
+        debt.schedule[pos].balance = debt.balance.toFixed(2);
 
         // Check if all the extra money is spent
         if (extra <= 0) {
@@ -214,26 +224,26 @@ function calculateStrategy(
     }
 
     // Determine if all the loans have been repaid
-    hasBalance = !!loanOrder.find(l => {
+    hasBalance = !!debtOrder.find(l => {
       return l.balance > 0;
     });
   }
 
-  const strategy: types.IStrategy = {
-    type: strategyConfig.type,
-    name: strategyConfig.name,
-    description: strategyConfig.description,
+  const strategy: types.PaymentStrategy = {
+    type: strategyDefinition.type,
+    name: strategyDefinition.name,
+    description: strategyDefinition.description,
     principal: 0,
     interest: 0,
     total: 0
   };
 
   // Determine some post-calulation properties
-  for (let loan of loanOrder) {
-    loan.payments = loan.schedule.length;
+  for (let debt of debtOrder) {
+    debt.payments = debt.schedule.length;
 
-    strategy.principal += Number(loan.principal);
-    strategy.interest += Number(loan.interest);
+    strategy.principal += Number(debt.principal);
+    strategy.interest += Number(debt.interest);
     strategy.total = strategy.principal + strategy.interest;
   }
 
