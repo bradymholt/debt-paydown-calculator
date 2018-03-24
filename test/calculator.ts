@@ -1,4 +1,5 @@
 import * as types from "../src/types";
+import * as enums from "../src/enums";
 import * as calculator from "../src/calculator";
 
 it("calculates correct strategy amounts for multiple loans", async function() {
@@ -15,7 +16,7 @@ it("calculates correct strategy amounts for multiple loans", async function() {
   assert.exists(
     strategies.find(s => {
       return (
-        s.type == calculator.StrategyTypeEnum.HighestBalanceFirst &&
+        s.type == enums.StrategyTypeEnum.HighestBalanceFirst &&
         s.total == 3743.3
       );
     })
@@ -23,7 +24,7 @@ it("calculates correct strategy amounts for multiple loans", async function() {
   assert.exists(
     strategies.find(s => {
       return (
-        s.type == calculator.StrategyTypeEnum.LowestBalanceFirst &&
+        s.type == enums.StrategyTypeEnum.LowestBalanceFirst &&
         s.total == 3739.65
       );
     })
