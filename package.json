@@ -6,13 +6,20 @@
   "scripts": {
     "build": "rm -rf dist/* && npx webpack --progress --config webpack.config.prod.js",
     "dev": "npx webpack-dev-server --progress --config webpack.config.dev.js",
+    "test": "cd test/ && npx mocha --require ./support/setup.js --require ts-node/register ./*.ts",
     "start": "npm run dev"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@types/mocha": "^2.2.48",
+    "@types/node": "^9.4.7",
+    "mocha": "^5.0.4"
+  },
   "devDependencies": {
     "@fortawesome/fontawesome": "^1.1.4",
     "@fortawesome/fontawesome-free-solid": "^5.0.8",
+    "@types/chai": "^4.1.2",
     "bulma": "^0.6.2",
+    "chai": "^4.1.2",
     "css-loader": "^0.28.0",
     "extract-text-webpack-plugin": "^4.0.0-beta.0",
     "file-loader": "^1.1.4",
@@ -26,6 +33,7 @@
     "script-ext-html-webpack-plugin": "^2.0.1",
     "style-loader": "^0.20.3",
     "ts-loader": "^4.0.1",
+    "ts-node": "^5.0.1",
     "typescript": "^2.7.2",
     "uglifyjs-webpack-plugin": "^1.1.1",
     "url-loader": "^1.0.1",
