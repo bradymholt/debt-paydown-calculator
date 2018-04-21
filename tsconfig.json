@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "outDir": "dist/",
+    "outDir": "docs/",
     "sourceMap": true,
     "strict": true,
     "module": "esnext",

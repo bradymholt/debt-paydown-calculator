@@ -4,7 +4,7 @@
   "description": "A Vue.js project",
   "author": "Brady Holt <brady.holt@gmail.com>",
   "scripts": {
-    "build": "rm -rf dist/* && npx webpack --progress --config webpack.config.prod.js",
+    "build": "rm -rf docs/* && npx webpack --progress --config webpack.config.prod.js",
     "dev": "npx webpack-dev-server --progress --config webpack.config.dev.js",
     "test": "cd test/ && npx mocha --require ./support/setup.js --require ts-node/register ./*.ts",
     "start": "npm run dev"
