@@ -1,6 +1,6 @@
 import * as types from "../src/types";
 import * as enums from "../src/enums";
-import * as calculator from "../src/calculator";
+import * as calculator from "../src/lib/calculator";
 
 it("calculates correct strategy amounts for multiple loans", async function() {
   let loans: types.Debt[] = [

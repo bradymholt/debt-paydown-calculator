@@ -59,8 +59,9 @@ import * as types from "./types";
 import Debt from "./components/Debt.vue";
 import Strategy from "./components/Strategy.vue";
 import { Component, Vue, Watch } from "vue-property-decorator";
-import * as calculator from "./calculator";
-import * as randomizer from "./randomizer";
+import * as calculator from "./lib/calculator";
+import * as randomizer from "./lib/randomizer";
+import * as ynabAccountLoader from "./lib/ynabAccountLoader";
 import * as ynab from "ynab";
 import Account from "./components/Debt.vue";
 const config = require("./config.json");
@@ -77,14 +78,9 @@ export default class App extends Vue {
   strategiesVisible = false;
   debtsHaveErrors = false;
   validateAll = false;
-  ynabAccessToken = "";
 
   async created() {
-    this.grabYNABToken();
-
-    if (this.ynabAccessToken) {
-      this.loadYNABAccounts();
-    } else {
+    if (!await this.loadYNABDebts()) {
       this.debts = randomizer.getRandomDebts(3);
       this.strategiesVisible = true;
       this.debtsHaveErrors = false;
@@ -123,37 +119,37 @@ export default class App extends Vue {
       const params = JSON.parse('{"' + search + '"}', function(key, value) {
         return key === "" ? value : decodeURIComponent(value);
       });
-      this.ynabAccessToken = token = params.access_token;
+      token = params.access_token;
       window.location.hash = "";
+      return token;
     }
   }
 
-  async loadYNABAccounts() {
-    const ynabAPI = new ynab.api(this.ynabAccessToken);
-    try {
-      const firstBudget = (await ynabAPI.budgets.getBudgets()).data.budgets[0];
-      const creditAccounts = (await ynabAPI.accounts.getAccounts(
-        firstBudget.id
-      )).data.accounts.filter(a => {
-        return a.type == ynab.Account.TypeEnum.CreditCard;
-      });
-      this.debts = creditAccounts.map(c => {
-        return {
-          id: c.id,
-          principal: ynab.utils
-            .convertMilliUnitsToCurrencyAmount(c.balance)
-            .toString(),
-          rate: "",
-          minPayment: ""
-        };
-      });
-    } catch (err) {
-      console.log(`Error connecting to YNAB: ${err.error.detail}`);
-    }
+  async loadYNABDebts() {
+    let loaded = false;
+    let ynabAccessToken = this.grabYNABToken();
 
-    if (this.debts.length == 0) {
-      this.addDebt();
+    if (ynabAccessToken) {
+      let ynabAccounts = await ynabAccountLoader.fetchYNABAccounts(
+        ynabAccessToken
+      );
+      if (ynabAccounts.length) {
+        this.debts = ynabAccounts.map(c => {
+          return {
+            id: c.id,
+            principal: ynab.utils
+              .convertMilliUnitsToCurrencyAmount(c.balance)
+              .toString(),
+            rate: "",
+            minPayment: ""
+          };
+        });
+      } else {
+        this.addDebt();
+      }
+      loaded = true;
     }
+    return loaded;
   }
 
   deleteDebt(debt: types.DisplayDebt) {

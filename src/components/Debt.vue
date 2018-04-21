@@ -40,7 +40,7 @@
 
 <script lang="ts">
 import * as types from "./../types";
-import * as calculator from "../calculator";
+import * as calculator from "../lib/calculator";
 import { Vue, Component, Prop, Emit, Watch } from "vue-property-decorator";
 
 @Component

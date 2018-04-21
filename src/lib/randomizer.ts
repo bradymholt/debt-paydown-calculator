@@ -1,4 +1,4 @@
-import { DisplayDebt } from "./types";
+import { DisplayDebt } from "../types";
 import { getMinimumPayment } from "./calculator";
 
 export function getRandomNumber(min = 1000, max = 20000) {

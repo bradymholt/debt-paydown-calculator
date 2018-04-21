@@ -18,7 +18,7 @@
 import * as types from "./../types";
 import PaymentChart from "./PaymentChart.vue";
 import { Vue, Component, Prop, Emit, Watch } from "vue-property-decorator";
-import { convertMonthsToTimespanText } from "../calculator";
+import { convertMonthsToTimespanText } from "../lib/calculator";
 
 @Component({ components: { PaymentChart } })
 export default class Strategy extends Vue {

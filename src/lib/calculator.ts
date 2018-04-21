@@ -2,8 +2,8 @@
 // Yeti Debt Snowball Calculator project (https://github.com/emberfeather/yeti/blob/master/script/yeti.js).
 // Copyright 2011 Randy Merrill
 
-import * as types from "./types";
-import { StrategyTypeEnum } from "./enums";
+import * as types from "../types";
+import { StrategyTypeEnum } from "../enums";
 import { getRandomNumber } from "./randomizer";
 
 /**
