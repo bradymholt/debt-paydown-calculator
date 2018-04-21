@@ -146,10 +146,6 @@ export default class App extends Vue {
             minPayment: ""
           };
         });
-
-        // Go ahead and calculate so that validation messages prompting min payment and interest will be shown
-        this.calculate();
-
       } else {
         this.addDebt();
       }
