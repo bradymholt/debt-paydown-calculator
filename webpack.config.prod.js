@@ -10,6 +10,8 @@ const config = require("./webpack.config.dev.js");
 
 config.mode = "production";
 
+config.output.publicPath = "/debt-paydown-calculator";
+
 // Exclude JS that will be loaded with CDN
 config.externals = {
   vue: "Vue"
