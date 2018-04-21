@@ -1,7 +1,7 @@
 import * as types from "../types";
 import * as ynab from "ynab";
 
-export async function fetchYNABAccounts(accessToken:string) {
+export async function fetchYNABAccounts(accessToken: string) {
   const ynabAPI = new ynab.api(accessToken);
   let accounts: ynab.Account[] = [];
 
@@ -18,7 +18,7 @@ export async function fetchYNABAccounts(accessToken:string) {
     const creditAccounts = (await ynabAPI.accounts.getAccounts(
       firstBudget.id
     )).data.accounts.filter(a => {
-      return a.type == ynab.Account.TypeEnum.CreditCard;
+      return a.type == ynab.Account.TypeEnum.CreditCard && a.balance < 0;
     });
     accounts = creditAccounts;
   } catch (err) {

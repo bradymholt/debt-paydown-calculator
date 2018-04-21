@@ -72,7 +72,7 @@ loadIcons();
   components: { Debt, Strategy }
 })
 export default class App extends Vue {
-  additionalAmount = randomizer.getRandomNumber(0, 500).toFixed(2);
+  additionalAmount = "";
   debts: Array<types.DisplayDebt> = [];
   strategies: types.PaymentStrategy[] = [];
   strategiesVisible = false;
@@ -81,6 +81,7 @@ export default class App extends Vue {
 
   async created() {
     if (!await this.loadYNABDebts()) {
+      this.additionalAmount = randomizer.getRandomNumber(0, 500).toFixed(2);
       this.debts = randomizer.getRandomDebts(3);
       this.strategiesVisible = true;
       this.debtsHaveErrors = false;
@@ -134,16 +135,21 @@ export default class App extends Vue {
         ynabAccessToken
       );
       if (ynabAccounts.length) {
+        this.additionalAmount = "";
         this.debts = ynabAccounts.map(c => {
           return {
             id: c.id,
             principal: ynab.utils
-              .convertMilliUnitsToCurrencyAmount(c.balance)
+              .convertMilliUnitsToCurrencyAmount(Math.abs(c.balance))
               .toString(),
             rate: "",
             minPayment: ""
           };
         });
+
+        // Go ahead and calculate so that validation messages prompting min payment and interest will be shown
+        this.calculate();
+
       } else {
         this.addDebt();
       }
