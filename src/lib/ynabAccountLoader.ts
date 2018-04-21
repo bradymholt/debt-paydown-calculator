@@ -12,7 +12,7 @@ export async function fetchYNABAccounts(accessToken:string) {
           return 0;
         }
 
-        return (a.last_modified_on || 0) < (b.last_modified_on || 0) ? -1 : 1;
+        return (a.last_modified_on || 0) < (b.last_modified_on || 0) ? 1 : -1;
       }
     )[0];
     const creditAccounts = (await ynabAPI.accounts.getAccounts(
