@@ -1,6 +1,6 @@
-# vue-typescript-bulma-template
+# Debt Paydown Calculator
 
-> A Vue.js template using TypeScript and Bulma
+> Compare methods to payoff your debt
 
 ## Build Setup
 
