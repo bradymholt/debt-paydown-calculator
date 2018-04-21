@@ -10,21 +10,29 @@
         </h2>
         <hr/>
       </div>
-      <h5 class="title is-5">Debts</h5>
-      <Debt v-for="(debt, index) in debts" v-model="debts[index]" @input="calculateStrategies" @delete="deleteDebt" :delete-allowed="debtDeleteAllowed" :key="debt.id" />
-      <button class="button is-success" v-on:click="addDebt" type="button">Add Another Loan</button>
+      <div class="columns">
+        <div class="column">
+          <h5 class="title is-5">Debts</h5>
+        </div>
+        <div class="column add-another">
+          <button class="button" v-on:click="connectToYNAB" type="button"><img width="25px" height="25px" src="@/assets/ynab-icon.png" alt="YNAB Icon">Connect to YNAB</button>
+          <button class="button is-info" v-on:click="addDebt" type="button">Add Another Debt</button>
+        </div>
+      </div>
+      <Debt v-for="(debt, index) in debts" v-model="debts[index]" @input="debtChanged" @delete="deleteDebt" @errors="debtsErrorsChanged" :delete-allowed="debtDeleteAllowed" :validate-all="validateAll" :key="debt.id" />
       <hr/>
       <div class="box">
-        Available monthly to pay off debt:
+        Additional amount to pay towards debt:
         <div class="control has-icons-left">
-          <input class="input" type="text" v-model="additionalAmount" placeholder="Amount">
+          <input class="input" type="text" v-model="additionalAmount" placeholder="Amount" v-validate="'required|regex:\\d+.?\\d*'" :class="{'input': true, 'is-danger': errors.has('additionalAmount') }" name="additionalAmount">
           <span class="icon is-small is-left">
             <i class="fas fa-dollar-sign"></i>
           </span>
         </div>
       </div>
+      <button class="button is-success" :disabled="hasErrors" v-on:click="calculate" type="button">Calculate</button>
     </section>
-    <section class="section">
+    <section v-if="strategiesVisible" class="section">
       <h5 class="title is-5">Strategies</h5>
       <div class="columns" v-for="i in Math.ceil(strategies.length / 3)" v-bind:key="i">
         <Strategy v-for="strategy in strategies.slice((i-1)*3,i*3)" :data="strategy" v-bind:key="strategy.id" />
@@ -52,6 +60,8 @@ import Debt from "./components/Debt.vue";
 import Strategy from "./components/Strategy.vue";
 import { Component, Vue, Watch } from "vue-property-decorator";
 import * as calculator from "./calculator";
+import * as randomizer from "./randomizer";
+const config = require("./config.json");
 
 loadIcons();
 
@@ -59,15 +69,24 @@ loadIcons();
   components: { Debt, Strategy }
 })
 export default class App extends Vue {
-  additionalAmount: number = 234.23;
-  debts: types.Debt[] = [
-    { id: 1, principal: "3000", rate: "15.5", minPayment: "38.75" },
-    { id: 2, principal: "500", rate: "17.25", minPayment: "50" }
-  ];
+  additionalAmount = randomizer.getRandomNumber(0, 500).toFixed(2);
+  debts = randomizer.getRandomDebts(3);
   strategies: types.PaymentStrategy[] = [];
+  strategiesVisible = false;
+  debtsHaveErrors = false;
+  validateAll = false;
+  ynabAccessToken = null;
 
   created() {
-    this.calculateStrategies();
+    this.grabYNABToken();
+
+    if (this.ynabAccessToken) {
+      this.debts = [];
+    } else {
+      this.strategiesVisible = true;
+      this.debtsHaveErrors = false;
+      this.calculate();
+    }
   }
 
   get debtDeleteAllowed() {
@@ -76,27 +95,73 @@ export default class App extends Vue {
 
   addDebt() {
     this.debts.push({
-      id: Date.now(),
+      id: Date.now().toString(),
       principal: "",
       rate: "",
       minPayment: ""
     });
   }
 
-  deleteDebt(debt: types.Debt) {
-    this.debts.splice(this.debts.indexOf(debt), 1);
+  connectToYNAB() {
+    const uri = `https://app.youneedabudget.com/oauth/authorize?client_id=${
+      config.clientId
+    }&redirect_uri=${config.redirectUri}&response_type=token`;
+    location.replace(uri);
   }
 
-  calculateStrategies() {
-    console.log("TEST")
-    this.strategies = calculator.getPaymentStrategies(
-      this.debts,
-      this.additionalAmount
-    );
+  grabYNABToken() {
+    let token = null;
+    const search = window.location.hash
+      .substring(1)
+      .replace(/&/g, '","')
+      .replace(/=/g, '":"');
+    if (search && search !== "") {
+      // Try to get access_token from the hash returned by OAuth
+      const params = JSON.parse('{"' + search + '"}', function(key, value) {
+        return key === "" ? value : decodeURIComponent(value);
+      });
+      this.ynabAccessToken = token = params.access_token;
+      window.location.hash = "";
+    }
+  }
+
+  deleteDebt(debt: types.DisplayDebt) {
+    this.debts.splice(this.debts.indexOf(debt), 1);
+    this.calculate();
+  }
+
+  debtChanged() {
+    this.strategiesVisible = false;
+  }
+
+  debtsErrorsChanged(hasErrors: boolean) {
+    this.debtsHaveErrors = hasErrors;
+  }
+
+  get hasErrors() {
+    return this.debtsHaveErrors || this.$validator.errors.items.length > 0;
+  }
+
+  calculate() {
+    this.validateAll = true;
+    if (!this.hasErrors) {
+      this.strategies = calculator.getPaymentStrategies(
+        this.debts,
+        this.additionalAmount
+      );
+      this.strategiesVisible = true;
+    }
   }
 }
 </script>
 
 <style lang="scss">
+.add-another {
+  width: 160px;
+  text-align: right;
+}
 
+button > img {
+  margin-right: 10px;
+}
 </style>

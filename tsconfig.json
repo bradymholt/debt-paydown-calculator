@@ -9,5 +9,6 @@
     "experimentalDecorators": true,
     "strictPropertyInitialization": false
   },
-  "files": ["src/vue-shims.d.ts", "src/boot.ts"]
+  "include": ["src/declarations/*.d.ts"],
+  "files": ["src/boot.ts"]
 }
