@@ -35,7 +35,7 @@ config.plugins = [
   }),
   // generate all css to a file and add reference to it
   new ExtractTextPlugin({
-    filename: "[name].[contenthash].css",
+    filename: "[name].[hash].css",
     allChunks: true
   }),
   // compress extracted CSS. We are using this plugin so that possible
@@ -56,13 +56,7 @@ config.plugins = [
   }),
   new ScriptExtHtmlWebpackPlugin({
     defaultAttribute: "defer"
-  }),
-  new PrerenderSpaPlugin(
-    // Absolute path to compiled SPA
-    path.join(__dirname, "dist"),
-    // List of routes to prerender
-    ["/"]
-  )
+  })
 ];
 
 module.exports = config;

@@ -61,6 +61,8 @@ import Strategy from "./components/Strategy.vue";
 import { Component, Vue, Watch } from "vue-property-decorator";
 import * as calculator from "./calculator";
 import * as randomizer from "./randomizer";
+import * as ynab from "ynab";
+import Account from "./components/Debt.vue";
 const config = require("./config.json");
 
 loadIcons();
@@ -70,19 +72,20 @@ loadIcons();
 })
 export default class App extends Vue {
   additionalAmount = randomizer.getRandomNumber(0, 500).toFixed(2);
-  debts = randomizer.getRandomDebts(3);
+  debts: Array<types.DisplayDebt> = [];
   strategies: types.PaymentStrategy[] = [];
   strategiesVisible = false;
   debtsHaveErrors = false;
   validateAll = false;
-  ynabAccessToken = null;
+  ynabAccessToken = "";
 
-  created() {
+  async created() {
     this.grabYNABToken();
 
     if (this.ynabAccessToken) {
-      this.debts = [];
+      this.loadYNABAccounts();
     } else {
+      this.debts = randomizer.getRandomDebts(3);
       this.strategiesVisible = true;
       this.debtsHaveErrors = false;
       this.calculate();
@@ -122,6 +125,34 @@ export default class App extends Vue {
       });
       this.ynabAccessToken = token = params.access_token;
       window.location.hash = "";
+    }
+  }
+
+  async loadYNABAccounts() {
+    const ynabAPI = new ynab.api(this.ynabAccessToken);
+    try {
+      const firstBudget = (await ynabAPI.budgets.getBudgets()).data.budgets[0];
+      const creditAccounts = (await ynabAPI.accounts.getAccounts(
+        firstBudget.id
+      )).data.accounts.filter(a => {
+        return a.type == ynab.Account.TypeEnum.CreditCard;
+      });
+      this.debts = creditAccounts.map(c => {
+        return {
+          id: c.id,
+          principal: ynab.utils
+            .convertMilliUnitsToCurrencyAmount(c.balance)
+            .toString(),
+          rate: "",
+          minPayment: ""
+        };
+      });
+    } catch (err) {
+      console.log(`Error connecting to YNAB: ${err.error.detail}`);
+    }
+
+    if (this.debts.length == 0) {
+      this.addDebt();
     }
   }
 

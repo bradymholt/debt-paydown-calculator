@@ -50,15 +50,26 @@ export default class Account extends Vue {
   @Prop() validateAll: boolean;
 
   data = this.value;
+  loaded = false;
 
   created() {
     // clone value so we do not mutate it
     this.data = Object.assign({}, this.value);
   }
 
+  mounted() {
+    this.$nextTick(function() {
+      // This runs after entire view has been rendered
+      this.loaded = true;
+    });
+  }
+
   @Watch("data", { deep: true })
-  @Emit("input")
-  onDataChanged() {}
+  onDataChanged(data: any) {
+    if (this.loaded) {
+      this.$emit("input", data);
+    }
+  }
 
   deleteDebt() {
     this.$emit("delete", this.data);

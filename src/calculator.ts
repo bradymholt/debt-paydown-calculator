@@ -13,6 +13,24 @@ import { getRandomNumber } from "./randomizer";
  */
 const strategyDefinitions: Array<types.StrategyDefinition> = [
   {
+    type: StrategyTypeEnum.HighestBalanceFirst,
+    name: "Highest Balance First",
+    description:
+      "This strategy is calculated as a counter-point to the Debt Snowball (Lowest Balance) strategy to show how much of a difference the order makes.",
+    sorter: function(debts: types.StrategyDebt[]) {
+      return debts.sort(function(a, b) {
+        var diff = Number(b.principal) - Number(a.principal);
+
+        // If they have the same interest rate, want the one with the lowest balance first
+        if (diff === 0) {
+          return Number(b.rate) - Number(a.rate);
+        }
+
+        return diff;
+      });
+    }
+  },
+  {
     type: StrategyTypeEnum.LowestBalanceFirst,
     name: "Debt Snowball (Lowest Balance First)",
     description:
@@ -52,7 +70,7 @@ const strategyDefinitions: Array<types.StrategyDefinition> = [
     type: StrategyTypeEnum.LowestInterestRateFirst,
     name: "Lowest Interest Rate First",
     description:
-      "This is calculated as a counter-point to the Debt Avalanche (Highest Interest Rate) strategy to show how much of a difference the order makes.",
+      "This strategy is calculated as a counter-point to the Debt Avalanche (Highest Interest Rate) strategy to show how much of a difference the order makes.",
     sorter: function(loans: types.StrategyDebt[]) {
       return loans.sort(function(a, b) {
         var diff = a.rate - b.rate;
@@ -70,7 +88,7 @@ const strategyDefinitions: Array<types.StrategyDefinition> = [
     type: StrategyTypeEnum.BalanceMinimumPaymentRatio,
     name: "Balance/Minimum Payment Ratio",
     description:
-      "Attempts to find debts that will be easy to pay off and add the most to your snowball for the next debt.  This is a preferred strategy as it can be mentally and emotionally easier than the Highest Interest Rate strategy and usually quicker than the Lowest Balance strategy.",
+      "This strategy attempts to find debts that will be easy to pay off and add the most to your snowball for the next debt.  This is a preferred strategy as it can be mentally and emotionally easier than the Highest Interest Rate strategy and usually quicker than the Lowest Balance strategy.",
     sorter: function(loans: types.StrategyDebt[]) {
       return loans.sort(function(a, b) {
         var ratio = a.principal / a.minPayment - b.principal / b.minPayment;
@@ -88,7 +106,7 @@ const strategyDefinitions: Array<types.StrategyDefinition> = [
     type: StrategyTypeEnum.BalanceInterestRateRatio,
     name: "Balance/Interest Rate Ratio",
     description:
-      "Attempts to find debts that will be easy to pay off and add the most to your snowball for the next debt.  This is a preferred strategy as if can be mentally and emotionally easier than the Highest Interest Rate strategy and quicker than the Lowest Balance strategy.",
+      "This strategy attempts to find debts that will be easy to pay off and add the most to your snowball for the next debt.  This is a preferred strategy as if can be mentally and emotionally easier than the Highest Interest Rate strategy and quicker than the Lowest Balance strategy.",
     sorter: function(loans: types.StrategyDebt[]) {
       return loans.sort(function(a, b) {
         var ratio = a.principal / a.rate - b.principal / b.rate;
