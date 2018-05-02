@@ -2,6 +2,7 @@ const webpack = require("webpack");
 const path = require("path");
 const package = require("./package.json");
 const ExtractTextPlugin = require("extract-text-webpack-plugin");
+const { VueLoaderPlugin } = require('vue-loader');
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const ScriptExtHtmlWebpackPlugin = require("script-ext-html-webpack-plugin");
 const OptimizeCSSPlugin = require("optimize-css-assets-webpack-plugin");
@@ -35,6 +36,7 @@ config.plugins = [
       NODE_ENV: `"${config.mode}"`
     }
   }),
+  new VueLoaderPlugin(),
   // generate all css to a file and add reference to it
   new ExtractTextPlugin({
     filename: "[name].[hash].css",

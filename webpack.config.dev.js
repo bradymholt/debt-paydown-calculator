@@ -3,6 +3,7 @@ const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const ScriptExtHtmlWebpackPlugin = require("script-ext-html-webpack-plugin");
 const ExtractTextPlugin = require("extract-text-webpack-plugin");
+const { VueLoaderPlugin } = require("vue-loader");
 
 const srcDir = path.join(__dirname, "src");
 
@@ -28,59 +29,17 @@ const config = {
       },
       {
         test: /\.vue$/,
-        loader: "vue-loader",
-        options: {
-          loaders: {
-            scss: ExtractTextPlugin.extract({
-              fallback: "vue-style-loader",
-              use: [
-                {
-                  loader: "css-loader",
-                  options: {
-                    sourceMap: true,
-                    minimize: true
-                  }
-                },
-                {
-                  loader: "sass-loader"
-                }
-              ]
-            })
-          },
-          transformToRequire: {
-            video: ["src", "poster"],
-            source: "src",
-            img: "src",
-            image: "xlink:href"
-          }
-        }
+        loader: "vue-loader"
       },
       {
         test: /\.s?css$/,
         use: ExtractTextPlugin.extract({
-          use: ["css-loader", "sass-loader"],
-          // use style-loader in development
-          fallback: "style-loader"
+          fallback: "style-loader",
+          use: ["css-loader", "sass-loader"]
         })
       },
       {
-        test: /\.(png|jpe?g|gif|svg)(\?.*)?$/,
-        loader: "url-loader",
-        options: {
-          limit: 10000,
-          name: "[name].[hash:7].[ext]"
-        }
-      },
-      {
-        test: /\.(mp4|webm|ogg|mp3|wav|flac|aac)(\?.*)?$/,
-        loader: "url-loader",
-        options: {
-          limit: 10000,
-          name: "[name].[hash:7].[ext]"
-        }
-      },
-      {
-        test: /\.(woff2?|eot|ttf|otf)(\?.*)?$/,
+        test: /\.(png|jpe?g|gif|svg|mp4|webm|ogg|mp3|wav|flac|aac|woff2?|eot|ttf|otf)(\?.*)?$/,
         loader: "url-loader",
         options: {
           limit: 10000,
@@ -101,6 +60,7 @@ const config = {
   },
   plugins: [
     new webpack.HotModuleReplacementPlugin(),
+    new VueLoaderPlugin(),
     new ExtractTextPlugin({
       disable: true
     }),
