@@ -10,7 +10,6 @@ const PrerenderSpaPlugin = require("prerender-spa-plugin");
 const config = require("./webpack.config.dev.js");
 
 config.mode = "production";
-
 config.output.publicPath = "./";
 
 // Exclude JS that will be loaded with CDN

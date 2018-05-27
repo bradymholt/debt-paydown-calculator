@@ -27,6 +27,7 @@ function generateRandomDebt(minPrincipal = 2000, minRate = 5): DisplayDebt {
     id: getRandomNumber().toString(),
     principal,
     rate,
-    minPayment
+    minPayment,
+    valid: true
   };
 }

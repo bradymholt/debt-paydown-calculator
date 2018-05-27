@@ -1,6 +1,6 @@
 <template>
   <div class="box">
-    <button type="button" v-if="deleteAllowed" v-on:click="deleteDebt" class="delete is-medium"></button>
+    <button type="button" v-if="deleteAllowed" v-on:click="$emit('delete', data)" class="delete is-medium"></button>
     <div class="field is-horizontal">
       <div class="field-body">
         <div class="field is-narrow">
@@ -44,7 +44,7 @@ import * as calculator from "../lib/calculator";
 import { Vue, Component, Prop, Emit, Watch } from "vue-property-decorator";
 
 @Component
-export default class Account extends Vue {
+export default class Debt extends Vue {
   @Prop() value: types.Debt;
   @Prop() deleteAllowed: boolean;
   @Prop() validateAll: boolean;
@@ -71,10 +71,6 @@ export default class Account extends Vue {
     }
   }
 
-  deleteDebt() {
-    this.$emit("delete", this.data);
-  }
-
   rateBlur() {
     let calculatedMinPayment = calculator.getMinimumPayment(
       this.data.principal,
@@ -91,12 +87,18 @@ export default class Account extends Vue {
 
   @Watch("errors.items")
   errorsChanged(newValue: any, oldValue: any) {
-    this.$emit("errors", newValue.length > 0);
+    this.$emit("errors", <types.DisplayDebtErrors>{
+      id: this.data.id,
+      errors: newValue.length > 0
+    });
   }
 
   @Watch("validateAll")
-  validateAllChanged() {
-    (<any>this).$validator.validateAll();
+  async validateAllChanged() {
+    if (this.validateAll) {
+      await (<any>this).$validator.validate();
+      this.$emit("validated");
+    }
   }
 }
 </script>

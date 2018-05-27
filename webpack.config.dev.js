@@ -9,6 +9,7 @@ const srcDir = path.join(__dirname, "src");
 
 const config = {
   mode: "development",
+  devtool: "none",
   entry: {
     main: [path.join(srcDir, "boot.ts")]
   },

@@ -9,7 +9,16 @@ export interface Debt {
   minPayment: number;
 }
 
-export type DisplayDebt = Stringified<Debt>;
+export type StringifiedDebt = Stringified<Debt>;
+
+export interface DisplayDebt extends StringifiedDebt {
+  valid: boolean;
+}
+
+export interface DisplayDebtErrors {
+  id: number;
+  errors: boolean;
+}
 
 export interface StrategyDebtScheduleItem {
   amount: number;

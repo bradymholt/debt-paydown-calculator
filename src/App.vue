@@ -19,7 +19,7 @@
           <button class="button is-info" v-on:click="addDebt" type="button">Add Another Debt</button>
         </div>
       </div>
-      <Debt v-for="(debt, index) in debts" v-model="debts[index]" @input="debtChanged" @delete="deleteDebt" @errors="debtsErrorsChanged" :delete-allowed="debtDeleteAllowed" :validate-all="validateAll" :key="debt.id" />
+      <Debt v-for="(debt, index) in debts" v-model="debts[index]" @input="debtChanged" @delete="deleteDebt" @errors="debtsErrorsChanged" :validate-all="validateAll" @validated="validated" :delete-allowed="debtDeleteAllowed" :key="debt.id" />
       <hr/>
       <div class="box">
         Additional amount to pay towards debt:
@@ -30,7 +30,7 @@
           </span>
         </div>
       </div>
-      <button class="button is-success" :disabled="hasErrors" v-on:click="calculate" type="button">Calculate</button>
+      <button class="button is-success" v-on:click="calculate" type="button">Calculate</button>
     </section>
     <section v-if="strategiesVisible" class="section">
       <h5 class="title is-5">Strategies</h5>
@@ -49,6 +49,7 @@
         </div>
       </div>
     </footer>
+    <Import v-bind:ynab-accounts="ynabAccounts" @importAccounts="importAccounts" />
   </div>
 </template>
 
@@ -58,6 +59,7 @@ import { load as loadIcons } from "./iconLoader";
 import * as types from "./types";
 import Debt from "./components/Debt.vue";
 import Strategy from "./components/Strategy.vue";
+import Import from "./components/Import.vue";
 import { Component, Vue, Watch } from "vue-property-decorator";
 import * as calculator from "./lib/calculator";
 import * as randomizer from "./lib/randomizer";
@@ -69,23 +71,21 @@ const config = require("./config.json");
 loadIcons();
 
 @Component({
-  components: { Debt, Strategy }
+  components: { Debt, Strategy, Import }
 })
 export default class App extends Vue {
   additionalAmount = "";
   debts: Array<types.DisplayDebt> = [];
   strategies: types.PaymentStrategy[] = [];
+  ynabAccounts: Array<ynab.Account> = [];
   strategiesVisible = false;
-  debtsHaveErrors = false;
   validateAll = false;
 
   async created() {
     if (!await this.loadYNABDebts()) {
       this.additionalAmount = randomizer.getRandomNumber(0, 500).toFixed(2);
       this.debts = randomizer.getRandomDebts(3);
-      this.strategiesVisible = true;
-      this.debtsHaveErrors = false;
-      this.calculate();
+      this.showStrategies();
     }
   }
 
@@ -98,14 +98,19 @@ export default class App extends Vue {
       id: Date.now().toString(),
       principal: "",
       rate: "",
-      minPayment: ""
+      minPayment: "",
+      valid: false
     });
   }
 
   connectToYNAB() {
+    const redirectUri =
+      window.location.href.indexOf("localhost") > -1
+        ? "urn:ietf:wg:oauth:2.0:oob"
+        : window.location.href;
     const uri = `https://app.youneedabudget.com/oauth/authorize?client_id=${
       config.clientId
-    }&redirect_uri=${config.redirectUri}&response_type=token`;
+    }&redirect_uri=${redirectUri}&response_type=token`;
     location.replace(uri);
   }
 
@@ -131,31 +136,18 @@ export default class App extends Vue {
     let ynabAccessToken = this.grabYNABToken();
 
     if (ynabAccessToken) {
-      let ynabAccounts = await ynabAccountLoader.fetchYNABAccounts(
+      this.ynabAccounts = await ynabAccountLoader.fetchYNABAccounts(
         ynabAccessToken
       );
-      if (ynabAccounts.length) {
-        this.additionalAmount = "";
-        this.debts = ynabAccounts.map(c => {
-          return {
-            id: c.id,
-            principal: ynab.utils
-              .convertMilliUnitsToCurrencyAmount(Math.abs(c.balance))
-              .toString(),
-            rate: "",
-            minPayment: ""
-          };
-        });
-      } else {
-        this.addDebt();
-      }
-      loaded = true;
+
+      loaded = this.ynabAccounts.length > 0;
     }
     return loaded;
   }
 
   deleteDebt(debt: types.DisplayDebt) {
-    this.debts.splice(this.debts.indexOf(debt), 1);
+    const debtToDelete = this.debts.find(d => d.id == debt.id);
+    this.debts.splice(this.debts.indexOf(debtToDelete!), 1);
     this.calculate();
   }
 
@@ -163,23 +155,41 @@ export default class App extends Vue {
     this.strategiesVisible = false;
   }
 
-  debtsErrorsChanged(hasErrors: boolean) {
-    this.debtsHaveErrors = hasErrors;
+  debtsErrorsChanged(errors: types.DisplayDebtErrors) {
+    const debt = this.debts.find(d => d.id == errors.id.toString());
+    debt!.valid = !errors.errors;
   }
 
   get hasErrors() {
-    return this.debtsHaveErrors || this.$validator.errors.items.length > 0;
+    return (
+      !!this.debts.find(d => !d.valid) ||
+      this.$validator.errors.items.length > 0
+    );
+  }
+
+  importAccounts(accounts: Array<types.DisplayDebt>) {
+    this.debts = accounts;
   }
 
   calculate() {
     this.validateAll = true;
-    if (!this.hasErrors) {
-      this.strategies = calculator.getPaymentStrategies(
-        this.debts,
-        this.additionalAmount
-      );
-      this.strategiesVisible = true;
+  }
+
+  validated() {
+    if (this.hasErrors) {
+      this.validateAll = false;
+    } else if (this.validateAll) {
+      this.validateAll = false;
+      this.showStrategies();
     }
+  }
+
+  showStrategies() {
+    this.strategies = calculator.getPaymentStrategies(
+      this.debts,
+      this.additionalAmount
+    );
+    this.strategiesVisible = true;
   }
 }
 </script>
