@@ -19,7 +19,7 @@
           <button class="button is-info" v-on:click="addDebt" type="button">Add Another Debt</button>
         </div>
       </div>
-      <Debt v-for="(debt, index) in debts" v-model="debts[index]" @input="debtChanged" @delete="deleteDebt" @errors="debtsErrorsChanged" :validate-all="validateAll" @validated="validated" :delete-allowed="debtDeleteAllowed" :key="debt.id" />
+      <Debt v-for="(debt, index) in debts" v-model="debts[index]" @input="debtChanged" @delete="deleteDebt" :delete-allowed="debtDeleteAllowed" :key="debt.id" />
       <hr/>
       <div class="box">
         Additional amount to pay towards debt:
@@ -60,7 +60,7 @@ import * as types from "./types";
 import Debt from "./components/Debt.vue";
 import Strategy from "./components/Strategy.vue";
 import Import from "./components/Import.vue";
-import { Component, Vue, Watch } from "vue-property-decorator";
+import { Component, Vue } from "vue-property-decorator";
 import * as calculator from "./lib/calculator";
 import * as randomizer from "./lib/randomizer";
 import * as ynabAccountLoader from "./lib/ynabAccountLoader";
@@ -79,7 +79,6 @@ export default class App extends Vue {
   strategies: types.PaymentStrategy[] = [];
   ynabAccounts: Array<ynab.Account> = [];
   strategiesVisible = false;
-  validateAll = false;
 
   async created() {
     if (!await this.loadYNABDebts()) {
@@ -155,31 +154,13 @@ export default class App extends Vue {
     this.strategiesVisible = false;
   }
 
-  debtsErrorsChanged(errors: types.DisplayDebtErrors) {
-    const debt = this.debts.find(d => d.id == errors.id.toString());
-    debt!.valid = !errors.errors;
-  }
-
-  get hasErrors() {
-    return (
-      !!this.debts.find(d => !d.valid) ||
-      this.$validator.errors.items.length > 0
-    );
-  }
-
   importAccounts(accounts: Array<types.DisplayDebt>) {
     this.debts = accounts;
   }
 
-  calculate() {
-    this.validateAll = true;
-  }
-
-  validated() {
-    if (this.hasErrors) {
-      this.validateAll = false;
-    } else if (this.validateAll) {
-      this.validateAll = false;
+  async calculate() {
+    await this.$validator.validateAll();
+    if (this.$validator.errors.items.length == 0) {
       this.showStrategies();
     }
   }

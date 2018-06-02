@@ -6,31 +6,31 @@
         <div class="field is-narrow">
           <label class="label">Balance</label>
           <p class="control has-icons-left">
-            <input type="text" v-model="data.principal" placeholder="Balance" v-validate="'required|regex:\\d+.?\\d*'" :class="{'input': true, 'is-danger': errors.has('principal') }" name="principal">
+            <input type="text" v-model="data.principal" placeholder="Balance" v-validate="'required|regex:\\d+.?\\d*'" :class="{'input': true, 'is-danger': errors.has(data.id + '_principal') }" :name="data.id + '_principal'">
             <span class="icon is-small is-left">
               <i class="fas fa-dollar-sign"></i>
             </span>
-            <span v-show="errors.has('principal')" class="help is-danger">Must be an amount</span>
+            <span v-show="errors.has(data.id + '_principal')" class="help is-danger">Must be an amount</span>
           </p>
         </div>
         <div class="field is-narrow">
           <label class="label">Interest Rate</label>
           <p class="control has-icons-right">
-            <input class="input" type="text" v-model="data.rate" placeholder="Interest Rate" @blur="rateBlur" v-validate="'required|regex:\\d+.?\\d*'" :class="{'input': true, 'is-danger': errors.has('rate') }" name="rate">
+            <input class="input" type="text" v-model="data.rate" placeholder="Interest Rate" @blur="rateBlur" v-validate="'required|regex:\\d+.?\\d*'" :class="{'input': true, 'is-danger': errors.has(data.id + '_rate') }" :name="data.id + '_rate'">
             <span class="icon is-small is-right">
               <i class="fas fa-percent"></i>
             </span>
-            <span v-show="errors.has('rate')" class="help is-danger">Must be an amount</span>
+            <span v-show="errors.has(data.id + '_rate')" class="help is-danger">Must be an amount</span>
           </p>
         </div>
         <div class="field is-narrow">
           <label class="label">Minimum Payment</label>
           <p class="control has-icons-left">
-            <input class="input" type="text" v-model="data.minPayment" placeholder="Minimum Payment" v-validate="'required|regex:\\d+.?\\d*'" :class="{'input': true,  'is-danger': errors.has('minPayment') }" name="minPayment">
+            <input class="input" type="text" v-model="data.minPayment" placeholder="Minimum Payment" v-validate="'required|regex:\\d+.?\\d*'" :class="{'input': true,  'is-danger': errors.has(data.id + '_minPayment') }" :name="data.id + '_minPayment'">
             <span class="icon is-small is-left">
               <i class="fas fa-dollar-sign"></i>
             </span>
-            <span v-show="errors.has('minPayment')" class="help is-danger">Must be an amount</span>
+            <span v-show="errors.has(data.id + '_minPayment')" class="help is-danger">Must be an amount</span>
           </p>
         </div>
       </div>
@@ -41,13 +41,13 @@
 <script lang="ts">
 import * as types from "./../types";
 import * as calculator from "../lib/calculator";
-import { Vue, Component, Prop, Emit, Watch } from "vue-property-decorator";
+import { Vue, Component, Prop, Emit, Watch, Inject } from "vue-property-decorator";
 
 @Component
 export default class Debt extends Vue {
   @Prop() value: types.Debt;
   @Prop() deleteAllowed: boolean;
-  @Prop() validateAll: boolean;
+  @Inject() $validator: any;
 
   data = this.value;
   loaded = false;
@@ -82,22 +82,6 @@ export default class Debt extends Vue {
       Number(this.data.minPayment < calculatedMinPayment)
     ) {
       this.data.minPayment = Number(calculatedMinPayment.toFixed(2));
-    }
-  }
-
-  @Watch("errors.items")
-  errorsChanged(newValue: any, oldValue: any) {
-    this.$emit("errors", <types.DisplayDebtErrors>{
-      id: this.data.id,
-      errors: newValue.length > 0
-    });
-  }
-
-  @Watch("validateAll")
-  async validateAllChanged() {
-    if (this.validateAll) {
-      await (<any>this).$validator.validate();
-      this.$emit("validated");
     }
   }
 }

@@ -8,7 +8,7 @@
       </header>
       <section class="modal-card-body">
         <p>The following credit accounts were found on your YNAB account. Please enter the interest rate and minimum payment and then click Import.</p>
-        <Debt v-for="(acct, index) in accounts" v-model="accounts[index]" :delete-allowed="true" @delete="deleteAccount" @errors="accountErrorsChanged" :validate-all="validateAll" @validated="validated" :key="acct.id" />
+        <Debt v-for="(acct, index) in accounts" v-model="accounts[index]" :delete-allowed="true" @delete="deleteAccount" :key="acct.id" />
       </section>
       <footer class="modal-card-foot">
         <button class="button is-success" @click="importAccounts">Import</button>
@@ -29,7 +29,6 @@ export default class Import extends Vue {
   @Prop() ynabAccounts: Array<ynab.Account>;
 
   accounts: Array<types.DisplayDebt> = [];
-  validateAll = false;
 
   get active() {
     return this.accounts.length > 0;
@@ -57,24 +56,9 @@ export default class Import extends Vue {
     }
   }
 
-  accountErrorsChanged(errors: types.DisplayDebtErrors) {
-    const account = this.accounts.find(d => d.id == errors.id.toString());
-    account!.valid = !errors.errors;
-  }
-
-  get hasErrors() {
-    return !!this.accounts.find(d => !d.valid);
-  }
-
-  importAccounts() {
-    // trigger validation and then continue in validated() method
-    this.validateAll = true;
-  }
-
-  validated() {
-    this.validateAll = false;
-
-    if (!this.hasErrors) {
+  async importAccounts() {
+    await this.$validator.validateAll();
+    if (this.$validator.errors.items.length == 0) {
       this.$emit("importAccounts", this.accounts);
       this.cancel();
     }

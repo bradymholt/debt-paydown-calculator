@@ -17,7 +17,6 @@ export interface DisplayDebt extends StringifiedDebt {
 
 export interface DisplayDebtErrors {
   id: number;
-  errors: boolean;
 }
 
 export interface StrategyDebtScheduleItem {
